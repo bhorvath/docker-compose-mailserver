@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  postfix:
+    image: postfix
+    restart: always
+    env_file: .env
+    environment:
+      - TZ=$TZ
+    ports:
+      - "${LISTEN_IP}:25:25/tcp"
+      - "${LISTEN_IP}:587:587/tcp"
+    volumes:
+      - "/etc/postfix:/etc/postfix"
+      - "/etc/letsencrypt/:/etc/letsencrypt"
+      - "/var/spool/postfix:/var/spool/postfix"
+    logging:
+      driver: syslog
+      options:
+        syslog-facility: mail
+  dovecot:
+    image: dovecot
+    restart: always
+    depends_on:
+      - "postfix"
+    env_file: .env
+    environment:
+      - TZ=$TZ
+      - SUBMISSION_HOST=postfix
+    ports:
+      - "${LISTEN_IP}:143:143/tcp"
+    volumes:
+      - "/etc/dovecot:/etc/dovecot"
+      - "/etc/letsencrypt:/etc/letsencrypt"
+      - "/var/mail:/var/mail"
+      - "/var/spool/postfix/private:/var/spool/postfix/private"
+    logging:
+      driver: syslog
+      options:
+        syslog-facility: mail
